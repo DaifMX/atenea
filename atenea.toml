@@ -1,0 +1,32 @@
+# ATENEA configuration. Copy to ./atenea.toml and edit.
+# Env vars referenced as ${VAR_NAME} are expanded at load time.
+
+[agent]
+# Hard cap on tool-call iterations per user turn.
+max_iterations = 60
+# Default provider id (must match a [[providers]] entry).
+default_provider = "openrouter"
+
+[[providers]]
+id = "openrouter"
+kind = "openrouter"
+# Any model slug from https://openrouter.ai/models, e.g.:
+#   anthropic/claude-3.5-sonnet, openai/gpt-4o, meta-llama/llama-3.3-70b-instruct
+model = "anthropic/claude-4.6-sonnet"
+api_key = "${OPENROUTER_API_KEY}"
+# Optional, OpenRouter-only ranking headers (shown on their dashboard).
+# http_referer = "https://github.com/your-team/atenea"
+# x_title = "ATENEA"
+# base_url defaults to https://openrouter.ai/api/v1; override if needed.
+
+[memory]
+dir = "./memory"
+
+[workspace]
+# Where ATENEA clones team repos. Phase 0: unused.
+dir = "./workspace"
+
+# Phase 0: empty. Populated in phase 2+.
+# [[repos]]
+# name = "example-service"
+# url  = "git@github.com:team/example-service.git"
