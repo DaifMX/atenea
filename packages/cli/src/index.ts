@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { stdout as output } from "node:process";
 import { getProvider, loadConfig } from "@atenea/config";
 import { createProvider } from "@atenea/providers";
