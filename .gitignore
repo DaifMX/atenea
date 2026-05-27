@@ -1,0 +1,23 @@
+.vscode
+.claude
+.idea
+
+# Node / pnpm
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Python (indexer service, phase 2)
+__pycache__/
+*.pyc
+.venv/
+.uv-cache/
+
+# ATENEA runtime data (not source)
+workspace/
+state.db
+state.db-*
+.atenea-local/
+
+# OS
+.DS_Store
