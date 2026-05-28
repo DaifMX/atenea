@@ -7,9 +7,7 @@ export interface SseEvent {
   data: string;
 }
 
-export async function* parseSseStream(
-  body: ReadableStream<Uint8Array>,
-): AsyncGenerator<SseEvent> {
+export async function* parseSseStream(body: ReadableStream<Uint8Array>): AsyncGenerator<SseEvent> {
   const reader = body.getReader();
   const decoder = new TextDecoder("utf-8");
   let buffer = "";
