@@ -1,0 +1,57 @@
+# ATENEA service topology (phase 1).
+#
+# Today only the `agent` service is defined. The `indexer` service block is
+# commented below as a forward declaration for phase 3 — uncomment once the
+# Python service exists. Datastores (SQLite, LanceDB) are embedded inside the
+# indexer process, so no separate database container is needed.
+#
+# Typical invocation:
+#   docker compose run --rm agent
+#   docker compose run --rm agent --provider openai
+#
+# Required on the host: an `atenea.toml` at the project root and whichever
+# provider API keys it references exported in the shell (or in a .env file).
+
+name: atenea
+
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: atenea/agent:dev
+    # Interactive REPL needs both a TTY and an attached stdin.
+    stdin_open: true
+    tty: true
+    init: true
+    working_dir: /work
+    environment:
+      # Provider credentials are resolved by atenea.toml via ${VAR} expansion.
+      ANTHROPIC_API_KEY:
+      OPENAI_API_KEY:
+      OPENROUTER_API_KEY:
+      ATENEA_HOME: /data
+    volumes:
+      # The project (and any target repos) live under /work.
+      - ./:/work
+      # Precious, rebuild-resistant state: sessions, approvals, audit log.
+      - atenea-data:/data
+    # No ports exposed — phase 3's indexer will use a Unix socket on the
+    # shared `atenea-data` volume rather than TCP.
+
+  # ─── phase 3: uncomment once services/indexer exists ──────────────────────
+  # indexer:
+  #   build:
+  #     context: .
+  #     dockerfile: services/indexer/Dockerfile
+  #   image: atenea/indexer:dev
+  #   init: true
+  #   environment:
+  #     ATENEA_HOME: /data
+  #   volumes:
+  #     - ./:/work
+  #     - atenea-data:/data
+  #   # Agent reaches the indexer at /data/indexer.sock (shared volume).
+
+volumes:
+  atenea-data:
