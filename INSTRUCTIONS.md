@@ -160,12 +160,13 @@ Explicitly **not included**: messaging, web browsing, image gen, TTS, scheduling
 | Phase | Deliverable | Why this order |
 |---|---|---|
 | **0 — bootstrap** | Repo layout, `atenea.toml`, provider abstraction with Anthropic + OpenAI, "hello world" agent loop with `fs.read` and `rg` only | Smallest end-to-end loop you can actually talk to |
-| **1 — memory + approval** | 5 markdown files with cap enforcement; per-edit approval middleware; SQLite state | Establishes the safety floor before adding any mutation power |
-| **2 — indexer MVP** | Python service, tree-sitter for TS/Py/Go, file summaries, LanceDB embeddings, `index.search` over Unix socket | Unlocks "tell me what's in these repos" |
-| **3 — dep graph** | Cross-repo edges, `graph.neighbors`, `graph.path` | The architectural-question feature |
-| **4 — TUI polish** | Ink-based UI, slash commands, streaming, diff approval | What you actually use daily |
-| **5 — self-improvement** | Post-turn hindsight, `SKILLS.md` / `LESSONS.md` writeback with accept/reject, summary refresh queue | The headline feature; built last because it needs the other layers to be stable |
-| **6 — hardening** | Credential pool, prefix caching tuning, audit log review, incremental reindex on `git pull` | Production-readiness |
+| **1 — containerization** | `Dockerfile` for the agent (TS CLI + future Python indexer), `compose.yaml` that brings up every service ATENEA needs (agent, indexer, any datastores), volume mounts for `~/.atenea/` state and `memory/` | Pins the runtime surface early so every later phase ships against a reproducible image instead of host-specific setups |
+| **2 — memory + approval** | 5 markdown files with cap enforcement; per-edit approval middleware; SQLite state | Establishes the safety floor before adding any mutation power |
+| **3 — indexer MVP** | Python service, tree-sitter for TS/Py/Go, file summaries, LanceDB embeddings, `index.search` over Unix socket | Unlocks "tell me what's in these repos" |
+| **4 — dep graph** | Cross-repo edges, `graph.neighbors`, `graph.path` | The architectural-question feature |
+| **5 — TUI polish** | Ink-based UI, slash commands, streaming, diff approval | What you actually use daily |
+| **6 — self-improvement** | Post-turn hindsight, `SKILLS.md` / `LESSONS.md` writeback with accept/reject, summary refresh queue | The headline feature; built last because it needs the other layers to be stable |
+| **7 — hardening** | Credential pool, prefix caching tuning, audit log review, incremental reindex on `git pull` | Production-readiness |
 
 ## 13. Open questions / risks
 - **Embedder choice at 1M+ LOC.** Local BGE-M3 is free but slow on first ingest (hours). Remote (OpenAI / Voyage / Cohere) costs ~$30–80 for the initial pass. Worth picking explicitly.

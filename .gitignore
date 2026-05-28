@@ -21,3 +21,4 @@ state.db-*
 
 # OS
 .DS_Store
+atenea.toml
