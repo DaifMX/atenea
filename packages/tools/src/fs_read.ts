@@ -28,12 +28,16 @@ export const fsReadTool: ToolDefinition = {
     required: ["path"],
     additionalProperties: false,
   },
+
   async execute(input, ctx) {
     const i = input as { path?: unknown; start_line?: unknown; end_line?: unknown };
+
     if (typeof i.path !== "string") throw new Error("fs_read: 'path' must be a string");
+
     const abs = resolveSafe(ctx.cwd, i.path);
 
     const st = await stat(abs);
+
     if (!st.isFile()) throw new Error(`fs_read: '${i.path}' is not a regular file`);
     if (st.size > MAX_BYTES) {
       throw new Error(
@@ -48,9 +52,12 @@ export const fsReadTool: ToolDefinition = {
     if (start === undefined && end === undefined) {
       return numberLines(text, 1);
     }
+
     const lines = text.split("\n");
+
     const s = Math.max(1, start ?? 1);
     const e = Math.min(lines.length, end ?? lines.length);
+
     if (e < s) throw new Error(`fs_read: end_line (${e}) precedes start_line (${s})`);
     return numberLines(lines.slice(s - 1, e).join("\n"), s);
   },

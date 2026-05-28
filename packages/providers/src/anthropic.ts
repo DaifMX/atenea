@@ -105,8 +105,10 @@ export class AnthropicProvider implements Provider {
     }
 
     // Accumulate per-block state to emit normalized events.
-    const blocks: Map<number, { type: "text" | "tool_use"; id?: string; name?: string; text: string; jsonAcc: string }> =
-      new Map();
+    const blocks: Map<
+      number,
+      { type: "text" | "tool_use"; id?: string; name?: string; text: string; jsonAcc: string }
+    > = new Map();
     const finalContent: ContentPart[] = [];
     let stopReason: StopReason = "end_turn";
 

@@ -91,9 +91,7 @@ export interface OpenAICompatRequest {
   signal?: AbortSignal;
 }
 
-export async function* streamOpenAICompat(
-  req: OpenAICompatRequest,
-): AsyncGenerator<StreamEvent> {
+export async function* streamOpenAICompat(req: OpenAICompatRequest): AsyncGenerator<StreamEvent> {
   const fetchInit: RequestInit = {
     method: "POST",
     headers: req.headers,
@@ -110,10 +108,8 @@ export async function* streamOpenAICompat(
   }
 
   let textAcc = "";
-  const toolAcc: Map<
-    number,
-    { id: string; name: string; argsAcc: string; emittedStart: boolean }
-  > = new Map();
+  const toolAcc: Map<number, { id: string; name: string; argsAcc: string; emittedStart: boolean }> =
+    new Map();
   let finish: StopReason = "end_turn";
 
   for await (const ev of parseSseStream(res.body)) {

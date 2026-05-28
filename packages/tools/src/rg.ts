@@ -57,9 +57,7 @@ export const rgTool: ToolDefinition = {
     args.push("--", i.pattern);
     // rg with no path argument reads from stdin — explicitly default to cwd.
     const searchPath =
-      typeof i.path === "string" && i.path.length > 0
-        ? resolveSafe(ctx.cwd, i.path)
-        : ctx.cwd;
+      typeof i.path === "string" && i.path.length > 0 ? resolveSafe(ctx.cwd, i.path) : ctx.cwd;
     args.push(searchPath);
 
     return await runRg(args, ctx.cwd, ctx.signal);

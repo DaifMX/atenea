@@ -15,13 +15,13 @@ const MAX_RESULT_CHARS = 20_000;
 function truncate(s: string): { content: string; truncated: boolean } {
   if (s.length <= MAX_RESULT_CHARS) return { content: s, truncated: false };
   const head = s.slice(0, MAX_RESULT_CHARS);
-  return { content: `${head}\n\n[…truncated, ${s.length - MAX_RESULT_CHARS} chars omitted]`, truncated: true };
+  return {
+    content: `${head}\n\n[…truncated, ${s.length - MAX_RESULT_CHARS} chars omitted]`,
+    truncated: true,
+  };
 }
 
-async function runOne(
-  call: ToolUsePart,
-  opts: ExecutorOptions,
-): Promise<ToolResultPart> {
+async function runOne(call: ToolUsePart, opts: ExecutorOptions): Promise<ToolResultPart> {
   const def = opts.registry.get(call.name);
   if (!def) {
     return {

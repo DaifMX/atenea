@@ -1,9 +1,5 @@
 import type { ProviderConfig } from "@atenea/config";
-import {
-  streamOpenAICompat,
-  toOpenAIMessages,
-  toOpenAITools,
-} from "./openai_compat.js";
+import { streamOpenAICompat, toOpenAIMessages, toOpenAITools } from "./openai_compat.js";
 import type { Provider, ProviderRequest, StreamEvent } from "./types.js";
 
 const DEFAULT_BASE = "https://openrouter.ai/api/v1";
