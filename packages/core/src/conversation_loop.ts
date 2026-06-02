@@ -7,6 +7,7 @@ import type {
   UserMessage,
 } from "@atenea/providers";
 import { executeToolCalls } from "./tool_executor.js";
+import { AbortApprovalError } from "./approval.js";
 import type { ToolContext, ToolRegistry } from "./tool.js";
 
 export interface LoopOptions {
@@ -93,10 +94,24 @@ export async function runTurn(
 
     for (const tc of toolCalls) opts.onToolStart?.(tc);
 
-    const results = await executeToolCalls(toolCalls, {
-      registry: opts.registry,
-      ctx: opts.toolCtx,
-    });
+    let results;
+    try {
+      results = await executeToolCalls(toolCalls, {
+        registry: opts.registry,
+        ctx: opts.toolCtx,
+      });
+    } catch (e) {
+      if (e instanceof AbortApprovalError) {
+        return {
+          finalText: lastText,
+          iterations: i,
+          stopReason: "error",
+          errorMessage: e.message,
+          messages,
+        };
+      }
+      throw e;
+    }
 
     for (const r of results) {
       opts.onToolResult?.(r.toolUseId, r.content, r.isError ?? false);

@@ -1,9 +1,10 @@
 # ATENEA service topology (phase 1).
 #
-# Today only the `agent` service is defined. The `indexer` service block is
-# commented below as a forward declaration for phase 3 — uncomment once the
-# Python service exists. Datastores (SQLite, LanceDB) are embedded inside the
-# indexer process, so no separate database container is needed.
+# Today only the `agent` service is defined. The `indexer` and `postgres`
+# service blocks are commented below as forward declarations for phase 3 —
+# uncomment once the Python service exists. SQLite (audit/approvals/memory
+# journal) stays embedded inside the agent process; vector storage uses
+# Postgres + pgVector running as its own container.
 #
 # Typical invocation:
 #   docker compose run --rm agent
@@ -29,7 +30,7 @@ services:
       # Provider credentials are resolved by atenea.toml via ${VAR} expansion.
       ANTHROPIC_API_KEY:
       OPENAI_API_KEY:
-      OPENROUTER_API_KEY:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       ATENEA_HOME: /data
     volumes:
       # The project (and any target repos) live under /work.
@@ -48,10 +49,34 @@ services:
   #   init: true
   #   environment:
   #     ATENEA_HOME: /data
+  #     PGHOST: postgres
+  #     PGPORT: "5432"
+  #     PGUSER: atenea
+  #     PGPASSWORD: ${POSTGRES_PASSWORD:-atenea}
+  #     PGDATABASE: atenea
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
   #   volumes:
   #     - ./:/work
   #     - atenea-data:/data
   #   # Agent reaches the indexer at /data/indexer.sock (shared volume).
 
+  # postgres:
+  #   image: pgvector/pgvector:pg16
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: atenea
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atenea}
+  #     POSTGRES_DB: atenea
+  #   volumes:
+  #     - atenea-pgdata:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U atenea -d atenea"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 20
+
 volumes:
   atenea-data:
+  # atenea-pgdata:

@@ -21,8 +21,15 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/cli/package.json       packages/cli/package.json
 COPY packages/config/package.json    packages/config/package.json
 COPY packages/core/package.json      packages/core/package.json
+COPY packages/memory/package.json    packages/memory/package.json
 COPY packages/providers/package.json packages/providers/package.json
+COPY packages/state/package.json     packages/state/package.json
 COPY packages/tools/package.json     packages/tools/package.json
+# better-sqlite3 ships prebuilt binaries for glibc Linux x64/arm64; the build
+# toolchain is only invoked if no prebuilt matches.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 build-essential \
+    && rm -rf /var/lib/apt/lists/*
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile
 

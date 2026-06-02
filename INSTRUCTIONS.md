@@ -34,7 +34,7 @@ TypeScript - pnpm
 │  │ rg / glob          │               │ file_summarizer (LLM)                ││
 │  │ terminal (sandbox) │               │ dep_graph builder (networkx)         ││
 │  │ index.* (RPC out)  │               │ embedder (BGE-M3 or OpenAI-compat)   ││
-│  │ memory.* (md write)│               │ vector store (LanceDB, on-disk)      ││
+│  │ memory.* (md write)│               │ vector store (pgVector / Postgres)   ││
 │  │ approval.*         │               │ JSON-RPC server (Unix socket)        ││
 │  └────────────────────┘               └──────────────────────────────────────┘│
 └───────────────────────────────────────────────────────────────────────────────┘
@@ -58,7 +58,7 @@ atenea/
 │       ├── parsers/         # tree-sitter wrappers per language
 │       ├── graph/           # cross-repo dependency builder
 │       ├── embeddings/      # pluggable embedder (local + remote)
-│       ├── store/           # LanceDB + SQLite + FTS5 wrappers
+│       ├── store/           # pgVector client + SQLite + FTS5 wrappers
 │       └── rpc/             # unix-socket JSON-RPC server
 ├── memory/                  # SOUL.md, MEMORY.md, USER.md, SKILLS.md, LESSONS.md
 ├── workspace/               # repo clones (gitignored)
@@ -88,7 +88,7 @@ Runs as a long-lived process, JSON-RPC over a Unix socket at `~/.atenea/indexer.
 1. **Parse** — tree-sitter pulls symbols (functions, classes, imports, exports, types) into SQLite tables.
 2. **Summarize** — for each file > N tokens, LLM produces a ≤120-word summary stored in `file_summaries`. Re-summarized only on hash change.
 3. **Dep graph** — networkx graph of (a) intra-repo import edges, (b) cross-repo edges via package name / API endpoint / message-queue topic detectors (configurable per stack). Persisted as a pickled graph + dumped JSON for inspection.
-4. **Embed** — chunks (symbol-aware) embedded via configurable embedder. Default: **BGE-M3 local** for cost; switchable to OpenAI-compatible endpoint. Stored in **LanceDB** (good fit for 1M+ LOC, on-disk, no server).
+4. **Embed** — chunks (symbol-aware) embedded via configurable embedder. Default: **BGE-M3 local** for cost; switchable to OpenAI-compatible endpoint. Stored in **Postgres with the pgVector extension** (HNSW index on the embedding column, scales past 1M+ LOC, allows SQL joins against symbol/summary metadata).
 5. **Doc/ADR ingestion** — markdown files under `docs/`, `adr/`, `architecture/`, plus all READMEs, embedded and tagged separately so `index.search` can filter.
 
 **RPC surface (minimal):**
@@ -148,10 +148,10 @@ Two distinct loops, both opt-in per turn but on by default:
 
 ## 10. Storage choices (at the 20+ repo / 1M+ LOC scale)
 
-- **Vector store:** LanceDB (embedded, on-disk, fast, no server) — chosen over Chroma for stability at scale and over Qdrant to avoid the server dep.
-- **Structured store:** SQLite WAL + FTS5 — same pattern as Hermes. Holds symbols, summaries, sessions, approvals, audit.
+- **Vector store:** Postgres + **pgVector** (HNSW index). Runs as a container service via `compose.yaml`; the indexer talks to it over TCP on the compose network. Chosen over LanceDB so embeddings live next to relational metadata (symbol rows, summaries, doc tags) and joins/filters happen in SQL instead of in process. Single dependency for the team to operate.
+- **Structured store:** SQLite WAL + FTS5 — same pattern as Hermes. Holds sessions, approvals, audit log, and the memory compaction journal. Stays embedded because it backs the agent process directly with sub-ms latency; vector and symbol data move to Postgres alongside the indexer.
 - **Graph:** networkx in-process, persisted as pickle + JSON snapshot. If it ever outgrows memory we move to kuzu; not at this scale.
-- **State separation:** `~/.atenea/index/` (rebuildable) vs `~/.atenea/state.db` + `memory/` (precious, backed up).
+- **State separation:** `~/.atenea/index/` artifacts (rebuildable, includes Postgres volume) vs `~/.atenea/state.db` + `memory/` (precious, backed up).
 
 ## 11. Toolset (curated, coding-focused)
 
@@ -169,7 +169,43 @@ Two distinct loops, both opt-in per turn but on by default:
 
 Explicitly **not included**: messaging, web browsing, image gen, TTS, scheduling, delegation. Web search is the one borderline case — useful for "what changed in lib X v3?" — I'd add a single `web.fetch` gated behind config-off-by-default.
 
-## 12. Build phases
+## 12. Development methodology — Spec Driven Development (SDD)
+
+**Every phase below MUST be executed using Spec Driven Development.** No code is written for a phase until its specs exist and have been reviewed.
+
+For each phase, and for every domain / component / entity the phase touches, the workflow is:
+
+1. **Generate a spec file** under `specs/<phase-id>/<domain>.md` (e.g. `specs/phase-2-memory-and-approval/memory-writer.md`).
+2. The spec file is a **clear, step-by-step Markdown document** describing how that component/domain/entity is going to look, including:
+   - **Purpose** — what this component is responsible for, in one paragraph.
+   - **Public surface** — exported functions/classes/types/CLI commands, with signatures.
+   - **Inputs / outputs / invariants** — what it accepts, what it returns, what must always hold true.
+   - **Dependencies** — other domains it relies on (link to their spec files).
+   - **Step-by-step implementation plan** — numbered list of concrete steps a developer (or agent) can follow top-to-bottom to build it.
+   - **Acceptance criteria** — observable behaviors that prove the component is done (test cases, CLI examples, file outputs).
+   - **Out of scope** — what this spec explicitly does NOT cover, to prevent drift.
+3. **Cross-link** specs: when domain A depends on domain B, link `[B](../<phase>/B.md)` so the graph of specs is navigable.
+4. **Specs come before code.** Open the phase by writing every spec file for that phase first; only then begin implementation. If implementation reveals the spec was wrong, update the spec in the same change.
+5. **One spec file per domain**, not per file. A domain may produce several source files, but it has exactly one spec.
+
+Directory layout for specs:
+
+```
+specs/
+├── phase-0-bootstrap/
+│   ├── cli-entrypoint.md
+│   ├── provider-abstraction.md
+│   └── ...
+├── phase-1-containerization/
+│   └── ...
+├── phase-2-memory-and-approval/
+│   └── ...
+└── ...
+```
+
+This methodology applies to **all phases from this point forward**, including any rework of already-shipped phases.
+
+## 13. Build phases
 
 | Phase                     | Deliverable                                                                                                                                                                                                | Why this order                                                                                                         |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -182,9 +218,10 @@ Explicitly **not included**: messaging, web browsing, image gen, TTS, scheduling
 | **6 — self-improvement**  | Post-turn hindsight, `SKILLS.md` / `LESSONS.md` writeback with accept/reject, summary refresh queue                                                                                                        | The headline feature; built last because it needs the other layers to be stable                                        |
 | **7 — hardening**         | Credential pool, prefix caching tuning, audit log review, incremental reindex on `git pull`                                                                                                                | Production-readiness                                                                                                   |
 
-## 13. Open questions / risks
+## 14. Open questions / risks
 
 - **Embedder choice at 1M+ LOC.** Local BGE-M3 is free but slow on first ingest (hours). Remote (OpenAI / Voyage / Cohere) costs ~$30–80 for the initial pass. Worth picking explicitly.
+- **Postgres/pgVector operational footprint.** Single-container Postgres is fine for a small team, but it is a process to keep alive (vs LanceDB which was process-local). The compose stack owns lifecycle; backups are a `pg_dump` cron, not a file copy.
 - **Cross-language dep detection.** Easy intra-language (imports). Cross-repo edges via shared package names work, but service-to-service edges (HTTP, queues, gRPC) need per-stack heuristics — start with whichever 1–2 stacks the team uses.
 - **Word-count cap UX.** When the compactor drops an entry the user wrote, the user should know. Plan: surface compactions in the TUI sidebar.
 - **Skills accumulation drift.** Hermes self-generates skills aggressively; that can degrade quality. ATENEA's accept/reject + word cap is the guard, but worth reviewing `LESSONS.md` manually every few weeks.

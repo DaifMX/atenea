@@ -1,4 +1,5 @@
 import type { ToolUsePart, ToolResultPart } from "@atenea/providers";
+import { AbortApprovalError } from "./approval.js";
 import type { ToolContext, ToolRegistry } from "./tool.js";
 
 const MAX_PARALLEL = 8;
@@ -36,6 +37,7 @@ async function runOne(call: ToolUsePart, opts: ExecutorOptions): Promise<ToolRes
     const { content } = truncate(raw);
     return { type: "tool_result", toolUseId: call.id, content };
   } catch (e) {
+    if (e instanceof AbortApprovalError) throw e;
     const msg = e instanceof Error ? e.message : String(e);
     return { type: "tool_result", toolUseId: call.id, content: msg, isError: true };
   }

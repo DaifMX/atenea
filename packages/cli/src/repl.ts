@@ -1,20 +1,28 @@
-import { createInterface } from "node:readline";
-import { stdin as input, stdout as output } from "node:process";
+import type { Interface as ReadlineInterface } from "node:readline";
+import { stdout as output } from "node:process";
 import type { AssistantMessage, Provider, UserMessage } from "@atenea/providers";
 import { runTurn, type ToolContext, type ToolRegistry } from "@atenea/core";
+import type { MemoryStore } from "@atenea/memory";
+import type { StateDb } from "@atenea/state";
 import { printUsage } from "./args.js";
+import { handleMemoryCommand } from "./slash_memory.js";
+import { handleApprovalsCommand } from "./slash_approvals.js";
 
 export interface ReplOptions {
+  rl: ReadlineInterface;
   provider: Provider;
   registry: ToolRegistry;
   systemPrompt: string;
   toolCtx: ToolContext;
   maxIterations: number;
+  memory: MemoryStore;
+  stateDb: StateDb;
+  sessionId: number;
 }
 
 export function runRepl(opts: ReplOptions): void {
-  const { provider, registry, systemPrompt, toolCtx, maxIterations } = opts;
-  const rl = createInterface({ input, output, prompt: "you> " });
+  const { rl, provider, registry, systemPrompt, toolCtx, maxIterations, memory, stateDb, sessionId } =
+    opts;
   const history: Array<UserMessage | AssistantMessage> = [];
 
   rl.prompt();
@@ -36,6 +44,26 @@ export function runRepl(opts: ReplOptions): void {
     if (line === "/clear") {
       history.length = 0;
       output.write("(history cleared)\n");
+      rl.prompt();
+      return;
+    }
+    if (line.startsWith("/memory")) {
+      handleMemoryCommand(memory, line.split(/\s+/).slice(1))
+        .catch((e) => output.write(`(/memory error: ${e instanceof Error ? e.message : e})\n`))
+        .finally(() => rl.prompt());
+      return;
+    }
+    if (line.startsWith("/approvals")) {
+      try {
+        handleApprovalsCommand(stateDb, sessionId, line.split(/\s+/).slice(1));
+      } catch (e) {
+        output.write(`(/approvals error: ${e instanceof Error ? e.message : e})\n`);
+      }
+      rl.prompt();
+      return;
+    }
+    if (line.startsWith("/")) {
+      output.write(`unknown command: ${line}\n`);
       rl.prompt();
       return;
     }
