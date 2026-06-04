@@ -1,0 +1,30 @@
+{
+  "name": "atenea",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ATENEA — self-improving coding agent for team repositories",
+  "license": "see LICENSE",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "atenea": "pnpm --filter @atenea/cli start"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "globals": "^15.15.0",
+    "prettier": "^3.8.3",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.60.0"
+  }
+}
