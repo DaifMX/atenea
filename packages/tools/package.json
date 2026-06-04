@@ -16,6 +16,8 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
-    "@atenea/core": "workspace:*"
+    "@atenea/core": "workspace:*",
+    "@atenea/memory": "workspace:*",
+    "@atenea/state": "workspace:*"
   }
 }

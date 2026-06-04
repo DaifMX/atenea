@@ -9,6 +9,8 @@
     { "path": "../config" },
     { "path": "../providers" },
     { "path": "../core" },
+    { "path": "../memory" },
+    { "path": "../state" },
     { "path": "../tools" }
   ]
 }

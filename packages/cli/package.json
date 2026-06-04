@@ -14,7 +14,9 @@
   "dependencies": {
     "@atenea/config": "workspace:*",
     "@atenea/core": "workspace:*",
+    "@atenea/memory": "workspace:*",
     "@atenea/providers": "workspace:*",
+    "@atenea/state": "workspace:*",
     "@atenea/tools": "workspace:*"
   }
 }

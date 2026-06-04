@@ -1,5 +1,5 @@
 {
-  "name": "@atenea/core",
+  "name": "@atenea/memory",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,6 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
-    "@atenea/config": "workspace:*",
     "@atenea/providers": "workspace:*",
     "@atenea/state": "workspace:*"
   }

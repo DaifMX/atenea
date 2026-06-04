@@ -5,5 +5,5 @@
     "outDir": "dist"
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "../config" }, { "path": "../providers" }, { "path": "../state" }]
+  "references": [{ "path": "../providers" }, { "path": "../state" }]
 }
