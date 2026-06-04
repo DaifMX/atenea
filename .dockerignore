@@ -1,0 +1,31 @@
+# VCS / editor / agent metadata
+.git
+.gitignore
+.idea
+.vscode
+.claude
+
+# Build outputs and per-package node_modules — installed fresh inside the image
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+
+# Python (future indexer service)
+**/__pycache__
+**/*.pyc
+**/.venv
+**/.uv-cache
+
+# ATENEA runtime data — must come from mounted volumes, never baked in
+workspace
+state.db
+state.db-*
+.atenea-local
+atenea.toml
+
+# Docker / OS
+Dockerfile
+.dockerignore
+compose.yaml
+compose.override.yaml
+.DS_Store
